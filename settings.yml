@@ -4,18 +4,18 @@ allow_sidebar_collapsing_to:
     - Anonymous
     - New Users
     - New Users & Anonymous
-  default: "New Users"
+  default: "New Users & Anonymous"
   description:
       en: 'Collapse the sidebar sections the first time for anonymous, new users (trust level as 0) or both.'
 ignore_sidebar_sections_user:
   type: list
   list_type: simple
-  default: ""
+  default: "community"
   description:
     en: 'Sections to <em>not</em> collapse by default for logged in user.<br />The Discourse sections name are: <code><em>community</em></code>, <code><em>categories</em></code>, <code><em>tags</em></code>, <code><em>messages</em></code>, and <code><em>chat-dms</em></code>.'
 ignore_sidebar_sections_anonymous:
   type: list
   list_type: simple
-  default: ""
+  default: "community"
   description:
     en: 'Sections to <em>not</em> collapse by default for anonymous.<br />The Discourse sections name are: <code><em>community</em></code>, <code><em>categories</em></code>, <code><em>tags</em></code>, <code><em>messages</em></code>, and <code><em>chat-dms</em></code>.'
