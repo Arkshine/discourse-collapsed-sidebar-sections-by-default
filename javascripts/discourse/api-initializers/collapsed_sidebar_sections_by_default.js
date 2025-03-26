@@ -1,62 +1,53 @@
 import { apiInitializer } from "discourse/lib/api";
 
-const PLUGIN_ID = "collapsed-sidebar-sections-by-default";
-
-const splitSettings = (sections) => {
-  return sections
-    .split("|")
-    .map((section) => section.trim())
-    .filter((section) => section.length > 0);
-};
-
-export default apiInitializer("0.11.1", (api) => {
+export default apiInitializer((api) => {
   const currentUser = api.getCurrentUser();
 
-  if (
-    (settings.allow_sidebar_collapsing_to === "Anonymous" && currentUser) ||
-    (settings.allow_sidebar_collapsing_to === "New Users" &&
-      (!currentUser || currentUser.trust_level > 0))
-  ) {
-    return;
+  if (settings.allow_sidebar_collapsing_to !== "everyone") {
+    const allowedGroups = settings.allow_sidebar_collapsing_to
+      .split("|")
+      .map(Number);
+
+    const userGroups = currentUser?.groups?.map((group) => group.id) || [];
+    if (![...allowedGroups].some((group) => userGroups.includes(group))) {
+      return;
+    }
   }
 
-  if (settings.allow_sidebar_collapsing_to === "New Users" && !currentUser) {
-    return;
-  }
-
-  const ignoreSectionsNames = splitSettings(
+  const ignoreSectionsNames = (
     currentUser
       ? settings.ignore_sidebar_sections_user
       : settings.ignore_sidebar_sections_anonymous
-  );
+  ).split("|");
 
-  api.modifyClass("component:sidebar/section", {
-    pluginId: PLUGIN_ID,
+  api.modifyClass(
+    "component:sidebar/section",
+    (Superclass) =>
+      class extends Superclass {
+        get isCollapsed() {
+          if (!this.args.collapsable) {
+            return false;
+          }
 
-    get displaySection() {
-      const displaySection =
-        this.args.displaySection === undefined || this.args.displaySection;
+          if (
+            this.keyValueStore.getItem(this.collapsedSidebarSectionKey) ===
+            undefined
+          ) {
+            if (
+              ignoreSectionsNames.length &&
+              !ignoreSectionsNames.includes(this.args.sectionName)
+            ) {
+              return true;
+            }
 
-      if (
-        displaySection &&
-        this.args.collapsable &&
-        (ignoreSectionsNames.length <= 0 ||
-          !ignoreSectionsNames.includes(this.args.sectionName))
-      ) {
-        const customKey = this.collapsedSidebarSectionKey + "-default";
+            return this.args.collapsedByDefault;
+          }
 
-        // First time we've seen this section
-        if (this.keyValueStore.getItem(customKey) === undefined) {
-          // Collapse the section by default
-          this.displaySectionContent = false;
-          this.keyValueStore.setItem(this.collapsedSidebarSectionKey, true);
-
-          // Remember that we've seen this section
-          this.keyValueStore.setItem(customKey, true);
+          return (
+            this.keyValueStore.getItem(this.collapsedSidebarSectionKey) ===
+            "true"
+          );
         }
       }
-
-      return displaySection;
-    },
-  });
+  );
 });
